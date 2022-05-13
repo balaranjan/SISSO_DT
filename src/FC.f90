@@ -17,6 +17,8 @@ module FC
 
 use var_global
 use libsisso
+!use dtree
+use gen_dtree
 ! module-level variables:
 integer*8 nselect,ntot,nthis,nreject,nvf_new
 real*8,allocatable:: trainy(:),trainy_c(:),fout(:,:),dim_out(:,:),vfeat(:,:,:),f_select(:,:),&
@@ -1962,7 +1964,8 @@ else if(ptype==2) then
                if(isconvex(itask,i)==0 .and. isconvex(itask,j)==0) cycle ! both are not convex domains
 
                if(isconvex(itask,i)==1 .and. isconvex(itask,j)==1) then
-                  call convex1d_overlap(feat_tmp1(:nf1),feat_tmp2(:nf2),width,k,length_tmp)
+                  !call convex1d_overlap(feat_tmp1(:nf1),feat_tmp2(:nf2),width,k,length_tmp)
+                  call tree_1D(feat_tmp1(:nf1),feat_tmp2(:nf2),k,length_tmp)
                   overlap_n=overlap_n+k
                   nconvexpair=nconvexpair+1
                   if(length_tmp>=0.d0) isoverlap=.true.
@@ -1994,7 +1997,7 @@ else if(ptype==2) then
    else ! separated length
      sis_score(2)=-mindist   ! separated length between domains,positive
    end if
-
+   sis_score(2) = sis_score(1)
 end if
 end function
 

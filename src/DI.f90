@@ -17,6 +17,8 @@ module DI
 
 use var_global
 use libsisso
+!use dtree
+use gen_dtree
 integer dim_DI
 
 contains
@@ -81,6 +83,7 @@ dat_readerr=.true.
 
 yinput=0
 xinput=0
+
 do i=1,ntask
 
 !  if(trim(adjustl(calc))=='FCDI') then
@@ -382,7 +385,7 @@ else if (trim(adjustl(method))=='L0' .or. fs_size_DI==fs_size_L0) then
     if(ptype==1) then
      call model(xinput,yinput,fname,nactive,activeset)
     else if (ptype==2) then
-     call model2(xinput,fname,nactive,activeset)
+     call model2(xinput,yinput,fname,nactive,activeset)
     end if
 end if
 
@@ -823,12 +826,12 @@ end subroutine
 
 
 ! descriptor for classification
-subroutine model2(x,fname,nactive,activeset)
+subroutine model2(x,y,fname,nactive,activeset)
 integer nactive,activeset(:),i,j,k,l,loc(1),ii(dim_DI),itask,mm1,mm2,mm3,mm4,ns,&
 idimen,select_model(max(nm_output,1),dim_DI),mID(max(nm_output,1),dim_DI),overlap_n,overlap_n_tmp,&
 select_overlap_n(max(nm_output,1)),nh,ntri,nconvexpair
 integer*8 totalm,bigm,nall,nrecord,nlower,nupper
-real*8  x(:,:,:),mscore(max(nm_output,1),2),overlap_area,overlap_area_tmp,select_overlap_area(max(nm_output,1)),&
+real*8  x(:,:,:),y(:,:),mscore(max(nm_output,1),2),overlap_area,overlap_area_tmp,select_overlap_area(max(nm_output,1)),&
 hull(maxval(nsample),2),area(maxval(ngroup(:,1000))),mindist,xtmp1(ubound(x,1),3),xtmp2(ubound(x,1),3)
 character fname(:)*200,line_name*100
 integer*8 njob(mpisize)
@@ -911,7 +914,8 @@ do idimen=1,dim_DI
               if(isconvex(itask,i)==0) cycle
               mm1=sum(ngroup(itask,:i-1))+1 
               mm2=sum(ngroup(itask,:i))
-              area(i)=convex2d_area(x(mm1:mm2,[activeset(ii(:idimen))],itask))
+              !area(i)=convex2d_area(x(mm1:mm2,[activeset(ii(:idimen))],itask))
+              area(i)=1.d0
              end do
            else if(idimen==3) then
              area(:ngroup(itask,1000))=1.d0  ! not yet implemented for 3D volumes
@@ -930,11 +934,13 @@ do idimen=1,dim_DI
                  if(idimen==1) then
                      xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
                      xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
-                     call convex1d_overlap(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),width,overlap_n_tmp,overlap_area_tmp)
+                     !call convex1d_overlap(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),width,overlap_n_tmp,overlap_area_tmp)
+                     call tree_1D(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),overlap_n_tmp,overlap_area_tmp)
                  else if(idimen==2) then
                      xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
                      xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
-                     call convex2d_overlap(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width,overlap_n_tmp,overlap_area_tmp)
+                     call tree_2D(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width,overlap_n_tmp,overlap_area_tmp)
+                     !call convex2d_overlap(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width,overlap_n_tmp,overlap_area_tmp)
                  else if(idimen==3) then
                      xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
                      xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
@@ -950,11 +956,12 @@ do idimen=1,dim_DI
                          overlap_area=mindist  ! smaller, better
                      end if
                  else 
-                     if(overlap_area_tmp>=0.d0 .and. min(area(i),area(j))==0.d0) then ! if overlapped with a 0D feature
-                         overlap_area=max(0.d0,overlap_area)+1.d0   ! totally overlapped
-                    else if (overlap_area_tmp>=0.d0 .and. min(area(i),area(j))>0.d0) then ! if overlapped without 0D feature
-                         overlap_area=max(0.d0,overlap_area)+overlap_area_tmp/(min(area(i),area(j)))  ! calculate total overlap
-                    end if
+                     !if(overlap_area_tmp>=0.d0 .and. min(area(i),area(j))==0.d0) then ! if overlapped with a 0D feature
+                     !    overlap_area=max(0.d0,overlap_area)+1.d0   ! totally overlapped
+                    !else if (overlap_area_tmp>=0.d0 .and. min(area(i),area(j))>0.d0) then ! if overlapped without 0D feature
+                     !    overlap_area=max(0.d0,overlap_area)+overlap_area_tmp/(min(area(i),area(j)))  ! calculate total overlap
+                    !end if
+                    overlap_area = overlap_area_tmp
                  end if
 
               ELSE IF(isconvex(itask,i)==1 .and. isconvex(itask,j)==0) then
@@ -995,7 +1002,7 @@ do idimen=1,dim_DI
            end do ! i
          end do ! itask
          
-         if(isoverlap)  overlap_area=overlap_area/float(nconvexpair) ! smaller, better
+         !if(isoverlap)  overlap_area=overlap_area/float(nconvexpair) ! smaller, better
          !----------------------------------
 
       ! store good models 

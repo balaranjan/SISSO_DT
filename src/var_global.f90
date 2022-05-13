@@ -13,9 +13,11 @@
 
 module var_global
 ! global variabls
-use mpi
+! use mpi
 
 implicit none
+include "mpif.h"
+
 real*8    stime_FCDI,etime_FCDI,stime_FC,etime_FC,stime_DI,etime_DI
 integer   nsf,nvf,ntask,vfsize,ndimtype,maxcomplexity,rung,maxrung,lname,maxcomb,fs_size_DI,fs_size_L0,ptype,&
           L1_max_iter,L1_nlambda,L1_dens,desc_dim,nm_output,CV_fold,CV_repeat,iFCDI,npf_must,funit,task_weighting
