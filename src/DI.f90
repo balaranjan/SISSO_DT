@@ -918,34 +918,41 @@ do idimen=1,dim_DI
               area(i)=1.d0
              end do
            else if(idimen==3) then
-             area(:ngroup(itask,1000))=1.d0  ! not yet implemented for 3D volumes
+              area(:ngroup(itask,1000))=1.d0  ! not yet implemented for 3D volumes
            end if
 
         !  model scores
-           do i=1,ngroup(itask,1000)-1
-             mm1=sum(ngroup(itask,:i-1))+1
-             mm2=sum(ngroup(itask,:i))
-             do j=i+1,ngroup(itask,1000)
-               mm3=sum(ngroup(itask,:j-1))+1
-               mm4=sum(ngroup(itask,:j))
-
+!           do i=1,ngroup(itask,1000)-1
+              !write(*,*) "DI x", shape(x), ii
+!             mm1=sum(ngroup(itask,:i-1))+1
+!             mm2=sum(ngroup(itask,:i))
+!             do j=i+1,ngroup(itask,1000)
+!               mm3=sum(ngroup(itask,:j-1))+1
+!               mm4=sum(ngroup(itask,:j))
+!
                IF(isconvex(itask,i)==1 .and. isconvex(itask,j)==1) then
                  nconvexpair=nconvexpair+1
                  if(idimen==1) then
-                     xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
-                     xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
-                     !call convex1d_overlap(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),width,overlap_n_tmp,overlap_area_tmp)
-                     call tree_1D(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),overlap_n_tmp,overlap_area_tmp)
+!                     xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
+!                     xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
+                    !call convex1d_overlap(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),width,overlap_n_tmp,overlap_area_tmp)
+                     !call tree_1D(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),overlap_n_tmp,overlap_area_tmp)
+                    call di_tree_1D(x(:, activeset(ii(idimen)),itask), ngroup(itask, :1000), overlap_n_tmp, overlap_area_tmp)
+!                    if (overlap_n_tmp .lt. 30) then
+!                       write(*,*) "NG", ngroup(itask, :3), overlap_n_tmp, overlap_area_tmp
+!                    end if
+                    
                  else if(idimen==2) then
-                     xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
-                     xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
-                     call tree_2D(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width,overlap_n_tmp,overlap_area_tmp)
+!                     xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
+!                     xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
+                     !call tree_2D(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width,overlap_n_tmp,overlap_area_tmp)
+                     call di_tree_2D(x(:, activeset(ii(:2)),itask), ngroup(itask, :1000), overlap_n_tmp, overlap_area_tmp)
                      !call convex2d_overlap(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width,overlap_n_tmp,overlap_area_tmp)
-                 else if(idimen==3) then
-                     xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
-                     xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
-                     call convex3d_overlap(xtmp1(mm1:mm2,:3),xtmp2(mm3:mm4,:3),width,overlap_n_tmp)
-                     overlap_area_tmp=0.d0  ! Calculating overlap_area is not implemented
+!                 else if(idimen==3) then
+!                     xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
+!                     xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
+!                     call convex3d_overlap(xtmp1(mm1:mm2,:3),xtmp2(mm3:mm4,:3),width,overlap_n_tmp)
+ !                    overlap_area_tmp=0.d0  ! Calculating overlap_area is not implemented
                  end if
                  overlap_n=overlap_n+overlap_n_tmp
                  if(overlap_area_tmp>=0) isoverlap=.true.
@@ -964,42 +971,42 @@ do idimen=1,dim_DI
                     overlap_area = overlap_area_tmp
                  end if
 
-              ELSE IF(isconvex(itask,i)==1 .and. isconvex(itask,j)==0) then
-                 if(idimen==1) then
-                     xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
-                     xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
-                     overlap_n=overlap_n+convex1d_in(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),width)
-                 else if(idimen==2) then
-                     xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
-                     xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
-                     overlap_n=overlap_n+convex2d_in(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width)
-                 else if(idimen==3) then
-                     xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
-                     xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
-                     call convex3d_hull(xtmp1(mm1:mm2,:3),ntri,triangles)
-                     overlap_n=overlap_n+convex3d_in(xtmp1(mm1:mm2,:3),xtmp2(mm3:mm4,:3),width,ntri,triangles)
-                     deallocate(triangles)
-                 end if
-              ELSE IF(isconvex(itask,i)==0 .and. isconvex(itask,j)==1) then
-                 if(idimen==1) then
-                     xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
-                     xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
-                     overlap_n=overlap_n+convex1d_in(xtmp2(mm3:mm4,1),xtmp1(mm1:mm2,1),width)
-                 else if(idimen==2) then
-                     xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
-                     xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
-                     overlap_n=overlap_n+convex2d_in(xtmp2(mm3:mm4,:2),xtmp1(mm1:mm2,:2),width)
-                 else if(idimen==3) then
-                     xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
-                     xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
-                     call convex3d_hull(xtmp2(mm3:mm4,:3),ntri,triangles)
-                     overlap_n=overlap_n+convex3d_in(xtmp2(mm3:mm4,:3),xtmp1(mm1:mm2,:3),width,ntri,triangles)
-                     deallocate(triangles)
-                 end if
+!              ELSE IF(isconvex(itask,i)==1 .and. isconvex(itask,j)==0) then
+!                 if(idimen==1) then
+!                     xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
+!                     xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
+!                     overlap_n=overlap_n+convex1d_in(xtmp1(mm1:mm2,1),xtmp2(mm3:mm4,1),width)
+!                 else if(idimen==2) then
+!                     xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
+!                     xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
+!                     overlap_n=overlap_n+convex2d_in(xtmp1(mm1:mm2,:2),xtmp2(mm3:mm4,:2),width)
+!                 else if(idimen==3) then
+!                     xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
+!                     xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
+!                     call convex3d_hull(xtmp1(mm1:mm2,:3),ntri,triangles)
+!                     overlap_n=overlap_n+convex3d_in(xtmp1(mm1:mm2,:3),xtmp2(mm3:mm4,:3),width,ntri,triangles)
+!                     deallocate(triangles)
+!                 end if
+!              ELSE IF(isconvex(itask,i)==0 .and. isconvex(itask,j)==1) then
+!                 if(idimen==1) then
+!                     xtmp1(mm1:mm2,1)=x(mm1:mm2,activeset(ii(idimen)),itask)
+!                     xtmp2(mm3:mm4,1)=x(mm3:mm4,activeset(ii(idimen)),itask)
+!                     overlap_n=overlap_n+convex1d_in(xtmp2(mm3:mm4,1),xtmp1(mm1:mm2,1),width)
+!                 else if(idimen==2) then
+!                     xtmp1(mm1:mm2,:2)=x(mm1:mm2,activeset(ii(:2)),itask)
+!                     xtmp2(mm3:mm4,:2)=x(mm3:mm4,activeset(ii(:2)),itask)
+!                     overlap_n=overlap_n+convex2d_in(xtmp2(mm3:mm4,:2),xtmp1(mm1:mm2,:2),width)
+!                 else if(idimen==3) then
+!                     xtmp1(mm1:mm2,:3)=x(mm1:mm2,activeset(ii(:3)),itask)
+!                     xtmp2(mm3:mm4,:3)=x(mm3:mm4,activeset(ii(:3)),itask)
+!                     call convex3d_hull(xtmp2(mm3:mm4,:3),ntri,triangles)
+!                     overlap_n=overlap_n+convex3d_in(xtmp2(mm3:mm4,:3),xtmp1(mm1:mm2,:3),width,ntri,triangles)
+!                     deallocate(triangles)
+!                 end if
               END IF
 
-             end do ! j
-           end do ! i
+  !           end do ! j
+!           end do ! i
          end do ! itask
          
          !if(isoverlap)  overlap_area=overlap_area/float(nconvexpair) ! smaller, better
@@ -1208,7 +1215,9 @@ else if(idimen<desc_dim) then ! .and. trim(adjustl(calc))=='FCDI') then
 end if
 write(9,'(a)')'================================================================================'
 write(9,'(i3,a)') idimen,'D descriptor (model): '
-write(9,'(a,i10)') 'Number of data in all overlap regions:',int(mscore(1,1))
+write(9, '(a)') ' '
+write(9, '(a)') ' '
+write(9,'(a,i10)') 'Total number of misclassified data (CV):',int(mscore(1,1))
 convexpair=.false.
 do itask=1,ntask
   do i=1,ngroup(itask,1000)
@@ -1218,10 +1227,10 @@ do itask=1,ntask
   end do
 end do
 if(idimen<=2 .and. convexpair) then
-  write(9,'(a,f15.5)') 'Size of the overlap:',mscore(1,2)
-  write(9,'(a)') 'Note: >0, overlap-size; <0, distance (absolute value) between separated domains'
+  write(9,'(a,f15.5)') 'CV Error (1 - Accuracy)             : ',mscore(1,2)
+  !write(9,'(a)') 'Note: >0, overlap-size; <0, distance (absolute value) between separated domains'
 end if
-write(9,'(a,i10)') 'Actual number (without double counting) of data in all overlap regions: ', ndata_ol
+!write(9,'(a,i10)') 'Actual number (without double counting) of data in all overlap regions: ', ndata_ol
 write(9,'(a)')  '@@@descriptor: '
 do i=1,idimen
 write(9,'(i23,3a)') id(i),':[',trim(adjustl(fname(id(i)))),']'

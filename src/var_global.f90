@@ -20,7 +20,9 @@ include "mpif.h"
 
 real*8    stime_FCDI,etime_FCDI,stime_FC,etime_FC,stime_DI,etime_DI
 integer   nsf,nvf,ntask,vfsize,ndimtype,maxcomplexity,rung,maxrung,lname,maxcomb,fs_size_DI,fs_size_L0,ptype,&
-          L1_max_iter,L1_nlambda,L1_dens,desc_dim,nm_output,CV_fold,CV_repeat,iFCDI,npf_must,funit,task_weighting
+     L1_max_iter,L1_nlambda,L1_dens,desc_dim,nm_output,CV_fold,CV_repeat,iFCDI,npf_must,funit,task_weighting,&
+     max_depth_1D, max_depth_2D
+
 parameter (lname=150,maxrung=20,maxcomb=10)
 character vf2sf*10,opset(maxrung)*200,method*10,metric*10!,calc*4
 real*8    maxfval_lb,maxfval_ub,width,L1_tole,L1_minrmse,L1_elastic,PI

@@ -42,6 +42,7 @@ if(mpirank==0) then
  end if
  open(9,file='SISSO.out',status='replace')
  write(9,'(a)') 'Version SISSO.3.0.2, June, 2020.'
+ write(9,'(a)') 'Modified to use Gini impurity for SIS and Decision Tree for SO, May 2022.'
  write(9,'(a/)')'================================================================================'
 end if
 
@@ -412,10 +413,15 @@ do while(.true.)
    read(line_para(i+1:),*,err=1001) nm_output
    case('metric')
    read(line_para(i+1:),*,err=1001) metric
-!   case('CV_fold')
-!   read(line_para(i+1:),*,err=1001) CV_fold
+   case('CV_fold')
+   read(line_para(i+1:),*,err=1001) CV_fold
 !   case('CV_repeat')
-!   read(line_para(i+1:),*,err=1001) CV_repeat
+   !   read(line_para(i+1:),*,err=1001) CV_repeat
+   case('max_depth_1D')
+      read(line_para(i+1:),*,err=1001) max_depth_1D
+
+   case('max_depth_2D')
+   read(line_para(i+1:),*,err=1001) max_depth_2D
    case('method')
    read(line_para(i+1:),*,err=1001) method
    case('fit_intercept')
@@ -502,6 +508,9 @@ do ll=1,ndimtype
   end if
 end do
 
+!max_depth_1D = 2
+!max_depth_2D = 4
+
 end subroutine
 
 subroutine read_data
@@ -580,7 +589,9 @@ opset=''                  ! operator sets for feature transformation
 method='L0'               ! 'L1L0' or 'L0'
 metric='RMSE'             ! metric for model selection: RMSE,MaxAE
 fit_intercept=.true.      ! fit to a nonzero intercept (.true.) or force the intercept to zero (.false.)
-!CV_fold=10               ! k-fold CV for each model: >=2
+CV_fold=5               ! k-fold CV for each model: >=2
+max_depth_1D=1
+max_depth_2D=3
 !CV_repeat=1              ! repeated k-fold CV
 desc_dim=1                ! descriptors up to desc_dim dimension will be calculated
 nm_output=100             ! number of models to be output (see files topxxx )
@@ -640,6 +651,9 @@ subroutine output_para
    write(9,'(a,e15.5)') 'Upper bound of the max abs. data value for the selected features: ',maxfval_ub
    write(9,2001) 'Size of the SIS-selected (single) subspace : ',subs_sis(:desc_dim)
    write(9,2004)  'Operators for feature construction: ',(trim(opset(j)),' ',j=1,rung)
+   write(9,'(a,i8)') 'CV Fold N: ',CV_fold
+   write(9,'(a,i8)') 'Max tree depth for 1D features: ',max_depth_1D
+   write(9,'(a,i8)') 'Max tree depth for 2D features: ',max_depth_2D
 
    if(trim(adjustl(method))=='L1L0') then
      write(9,'(a,i10)') 'Max iterations for LASSO (with given lambda) to stop: ',L1_max_iter
@@ -661,7 +675,8 @@ subroutine output_para
      write(9,'(a,l6)') 'Fitting intercept? ',fit_intercept
      write(9,'(a,a)')  'Metric for model selection: ',trim(metric)
 !     write(9,'(a,i8)') 'Fold of the k-fold CV (descriptor fixed): ',CV_fold
-!     write(9,'(a,i8)') 'Number of repeat for the k-fold CV: ',CV_repeat
+     !     write(9,'(a,i8)') 'Number of repeat for the k-fold CV: ',CV_repeat
+
    end if
    write(9,'(a)') '--------------------------------------------------------------------------------'
 end subroutine

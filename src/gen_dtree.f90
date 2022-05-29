@@ -1,4 +1,5 @@
 module gen_dtree
+  use var_global
   implicit none
 
   public :: Node
@@ -17,57 +18,181 @@ module gen_dtree
 
 contains
 
-  subroutine tree_1D(set1, set2, numb, area)
-    real*8 set1(:), set2(:), area
-    real(8), dimension(size(set1)+size(set2), 1) :: X
-    integer, dimension(size(set1)+size(set2)) :: y
-    integer i, numb, ns1, n
+!  subroutine tree_1D(set1, set2, numb, area)
+!    real*8 set1(:), set2(:), area
+!    real(8), dimension(size(set1)+size(set2), 1) :: X
+!    integer, dimension(size(set1)+size(set2)) :: y
+!    integer i, numb, ns1, n
+!
+!    ns1 = size(set1)
+!    n = (size(set1)+size(set2))
+!
+!    do i=1, n
+!       if (i .le. ns1) then
+!          X(i, 1) = set1(i)
+!          y(i) = 1
+!       else
+!          X(i, 1) = set2(i-ns1)
+!          y(i) = 2
+!       end if
+!    end do
+!
+!    call fit_tree(X, y, max_depth_1D, area, numb)
+!
+!  end subroutine tree_1D
+!  
 
-    ns1 = size(set1)
-    n = (size(set1)+size(set2))
 
-    do i=1, n
-       if (i .le. ns1) then
-          X(i, 1) = set1(i)
-          y(i) = 1
-       else
-          X(i, 1) = set2(i-ns1)
-          y(i) = 2
+!  subroutine tree_2D(set1, set2, width, numb, area)
+!    real*8 set1(:,:), set2(:,:), area, width
+!    real(8), dimension((size(set1)+size(set2))/2, 2) :: X
+!    integer numb, i, ns1, n
+!    integer, dimension((size(set1)+size(set2))/2) :: y
+!
+!    ns1 = size(set1)/2
+!    n = (size(set1)+size(set2))/2
+!
+!    do i=1, n
+!       if (i .le. ns1) then
+!          X(i, :) = set1(i, :)
+!          y(i) = 1
+!       else
+!          X(i, :) = set2(i-ns1, :)
+!          y(i) = 2
+!       end if
+!    end do
+!
+!    call fit_tree(X, y, max_depth_2D, area, numb)
+!    width = area
+!    
+!  end subroutine tree_2D
+!
+
+  subroutine di_tree_1D(X, ngroups, overlap_n, cvacc)
+    real*8 X(:), cvacc
+    integer max_depth, cvmc, ngroups(:), i, cl , j, overlap_n
+    integer, dimension(size(X)) :: y
+    real(8), dimension(size(X), 1) :: Xn
+
+    cvacc = 0.0
+    cvmc = 0
+    cl = 1
+
+    do i=1, 999
+       if (ngroups(i) .ne. 0) then
+
+          if (i .eq. 1) then
+             do j=1, ngroups(i)
+                y(j) = cl
+             end do
+          else
+             do j=sum(ngroups(:i-1))+1, sum(ngroups(:i))
+                y(j) = cl
+             end do
+          end if
+          
+          cl = cl + 1
        end if
     end do
 
-    call fit_tree(X, y, 1, area, numb)
-
-  end subroutine tree_1D
-  
-
-
-  subroutine tree_2D(set1, set2, width, numb, area)
-    real*8 set1(:,:), set2(:,:), area, width
-    real(8), dimension((size(set1)+size(set2))/2, 2) :: X
-    integer numb, i, ns1, n
-    integer, dimension((size(set1)+size(set2))/2) :: y
-
-    ns1 = size(set1)/2
-    n = (size(set1)+size(set2))/2
-
-    do i=1, n
-       if (i .le. ns1) then
-          X(i, :) = set1(i, :)
-          y(i) = 1
-       else
-          X(i, :) = set2(i-ns1, :)
-          y(i) = 2
-       end if
+    do i=1, size(X)
+       Xn(i, :) = X(i)
     end do
 
-    call fit_tree(X, y, 2, area, numb)
-    width = area
+    call fit_tree(Xn, y, max_depth_1D, CV_fold, cvacc, cvmc)
     
-  end subroutine tree_2D
+    overlap_n = cvmc
+
+  end subroutine di_tree_1D
 
 
-  subroutine fit_tree(X, y, max_depth, cvacc, cvmc)
+  subroutine sis_tree_1D(X, ngroups, overlap_n)
+    real*8 X(:), cvacc
+    integer max_depth, cvmc, ngroups(:), i, cl , j, overlap_n
+    integer, dimension(size(X)) :: y
+    real(8), dimension(size(X), 1) :: Xn
+    logical feat_invalid
+
+    feat_invalid = .false.
+
+    cvacc = 0.0
+    cvmc = 0
+    cl = 1
+
+    do i=1, 999
+       if (ngroups(i) .ne. 0) then
+
+          if (i .eq. 1) then
+             do j=1, ngroups(i)
+                y(j) = cl
+             end do
+          else
+             do j=sum(ngroups(:i-1))+1, sum(ngroups(:i))
+                y(j) = cl
+             end do
+          end if
+
+          cl = cl + 1
+       end if
+    end do
+
+    do i=1, size(X)
+       Xn(i, :) = X(i)
+    end do
+
+    ! check for NaN                                                                                                     
+    do i=1, size(X)
+       if (isnan(X(i)) .or. (X(i) .lt. maxfval_lb) .or. (X(i) .gt. maxfval_ub) .or. all_same(X)) then
+          feat_invalid = .true.
+       end if
+    end do
+
+    if (feat_invalid) then
+       overlap_n = size(y)
+    else
+       call fit_tree(Xn, y, max_depth_1D, 1, cvacc, cvmc)
+       overlap_n = cvmc
+    end if
+    
+  end subroutine sis_tree_1D  
+
+
+  subroutine di_tree_2D(X, ngroups, overlap_n, cvacc)
+    real*8 X(:,:), cvacc
+    integer max_depth, cvmc, ngroups(:), i, cl , j, overlap_n
+    integer, dimension(int(size(X)/2)) :: y
+
+    cvacc = 0.0
+    cvmc = 0
+    cl = 1
+
+    do i=1, 999
+       if (ngroups(i) .ne. 0) then
+
+          if (i .eq. 1) then
+             do j=1, ngroups(i)
+                y(j) = cl
+             end do
+          else
+             do j=sum(ngroups(:i-1))+1, sum(ngroups(:i))
+                y(j) = cl
+             end do
+          end if
+          
+          cl = cl + 1
+       end if
+    end do
+
+
+    call fit_tree(X, y, max_depth_2D, CV_fold, cvacc, cvmc)
+    
+    overlap_n = cvmc
+
+  end subroutine di_tree_2D
+
+
+
+  subroutine fit_tree(X, y, max_depth, cv, cvacc, cvmc)
     real*8 X(:,:), acc, cvacc
     integer y(:), max_depth, nfeatures, n, c, i, k, numb, depth, p, nsamples, ncorrect, cv, fs, ista, iend, cvmc
     type(Node), pointer :: pnode, rnode
@@ -76,8 +201,6 @@ contains
     real(8), dimension(:,:), allocatable :: xtrain, xval
     integer, dimension(:), allocatable :: train_inds, val_inds, yval, ytrain
 
-
-    cv = 5
     nsamples = size(y)
     fs = int(float(nsamples)/float(cv))
     rand_inds = randomized_indices(size(y))
@@ -88,14 +211,27 @@ contains
 
     do k=1, cv
        ista = max(1, int((k-1)*fs)+1)
+
+       if (cv .eq. 1) then
+          ista = 1
+       end if
+       
        iend = min(nsamples, (k*fs))
        
        allocate(val_inds(iend-ista+1))
-       allocate(train_inds(nsamples-(iend-ista+1)))
        allocate(yval(iend-ista+1))
-       allocate(ytrain(nsamples-(iend-ista+1)))
        allocate(xval(iend-ista+1, nfeatures))
-       allocate(xtrain(nsamples-(iend-ista+1), nfeatures))
+
+       if (cv .gt. 1) then
+          allocate(train_inds(nsamples-(iend-ista+1)))
+          allocate(ytrain(nsamples-(iend-ista+1)))
+          allocate(xtrain(nsamples-(iend-ista+1), nfeatures))
+       else
+          allocate(train_inds(nsamples))
+          allocate(ytrain(nsamples))
+          allocate(xtrain(nsamples, nfeatures))
+       end if
+       
 
        c = 1
        do i=ista, iend
@@ -103,13 +239,22 @@ contains
           c = c + 1
        end do
 
-       c = 1
-       do i=1, nsamples
-          if (.not. any(val_inds .eq. i)) then
+       if (cv .gt. 1) then
+          c = 1
+          do i=1, nsamples
+             if (.not. any(val_inds .eq. i)) then
+                train_inds(c) = i
+                c = c+ 1
+             end if
+          end do
+       else
+          c = 1
+          do i=1, nsamples
              train_inds(c) = i
              c = c+ 1
-          end if
-       end do
+          end do
+       end if
+       
        
 
        do i=1, size(val_inds)
@@ -135,6 +280,7 @@ contains
              c = y(i)
           end if
        end do
+
 
        call grow_tree(xtrain, ytrain, nfeatures, n, pnode, depth, max_depth)
        allocate(rnode)
@@ -172,7 +318,7 @@ contains
 
     end do
 
-    cvmc = int(float(cvmc)/float(cv))
+    !cvmc = int(float(cvmc)/float(cv))
     cvacc = cvacc/float(cv)
     cvacc = 1.0 - cvacc
 
@@ -374,6 +520,69 @@ contains
     end if
 
   end subroutine grow_tree
+
+
+  function all_same(X) result(same)
+    real*8 X(:)
+    logical :: same
+
+    same = .true.
+
+    if (sum(abs(X - X(1))) .gt. 1d-9) then
+       same = .false.
+    end if
+
+  end function all_same
+  
+  subroutine sis_gini_1D(X, ngroups, overlap_n)
+    real*8 X(:), gini, thr
+    integer max_depth, ngroups(:), i, cl , j, overlap_n, ibest
+    integer, dimension(size(X)) :: y
+    real(8), dimension(size(X), 1) :: Xn
+    logical feat_invalid
+
+    gini = 1.0
+    feat_invalid = .false.
+
+    cl = 1
+
+    do i=1, 999
+       if (ngroups(i) .ne. 0) then
+
+          if (i .eq. 1) then
+             do j=1, ngroups(i)
+                y(j) = cl
+             end do
+          else
+             cl = cl + 1
+             do j=sum(ngroups(:i-1))+1, sum(ngroups(:i))
+                y(j) = cl
+             end do
+          end if
+       end if
+    end do
+
+    do i=1, size(X)
+       Xn(i, :) = X(i)
+    end do
+
+    ! check for NaN
+    do i=1, size(X)
+       if (isnan(X(i)) .or. (X(i) .lt. maxfval_lb) .or. (X(i) .gt. maxfval_ub) .or. all_same(X)) then
+          feat_invalid = .true.
+       end if
+    end do
+    
+    if (feat_invalid) then
+       overlap_n = size(y)
+    else
+
+       call gini_loss(Xn, y, 1, cl, thr, gini, ibest)
+       overlap_n = int(gini*float(size(y)))
+
+    end if
+    
+  end subroutine sis_gini_1D
 
   
   subroutine gini_loss(X, y, nfeatures, nclasses, bf_threshold, loss, ibest_feature)

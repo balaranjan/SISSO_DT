@@ -40,6 +40,7 @@ integer   loc(1),nvf_old,ioerr
 logical   lreject
 character line*500,phiname*5,rejectname*100
 real*8    tmp,bbb,tmp_score(2)
+real*8 otemp
 integer*8 aaa,i,j,k,l,ll,mm1,mm2,nf(maxcomb),mpii,mpij,mpik
 real*8,allocatable:: ftag(:),SD(:),sisfeat(:,:),feat_in1(:,:),feat_in2(:,:),dim_in1(:,:),dim_in2(:,:)
 integer*8,allocatable:: nfpcore_this(:),nfpcore_tot(:),order(:),nvfpcore(:),complexity_in1(:),complexity_in2(:)
@@ -630,8 +631,10 @@ if(mpirank==0) then
       end do
    else if(ptype==2) then
       do i=1,nsis(iFCDI)
-        tmp_score=sis_score(sisfeat(:,i),trainy) ! for classification
+         tmp_score=sis_score(sisfeat(:,i),trainy) ! for classification
+         
         tmp_score(1)=1.d0/tmp_score(1)-1.d0   ! score 1: overlap_n, score 2: normalized overlap_length
+        !write(*,*) "FC635", tmp_score
         if(abs(tmp_score(2))>1d9) then
            write(funit,'(2a,i6,a,f12.4)') trim(name_sisfeat(i)),'  N=',nint(tmp_score(1))        
         else
@@ -1922,7 +1925,8 @@ if(ptype==1) then
   sis_score(1)=sis_score(1)/sqrt(sum(yyy**2)/ntask)  ! normalize the total score
   sis_score(2)=1.d0   ! not used
 
-else if(ptype==2) then  
+else if(ptype==2) then
+   
    mindist=-1d10
    overlap_n=0
    overlap_length=0.d0
@@ -1931,64 +1935,11 @@ else if(ptype==2) then
    do itask=1,ntask
 
    ! calculate overlap between domains of property i
-        do i=1,ngroup(itask,1000)-1   ! ngroup(itask,1000) record the number of groups in this task
-            if(itask==1) then
-              mm1=sum(ngroup(itask,:i-1))+1
-              mm2=sum(ngroup(itask,:i))
-            else            
-              mm1=sum(nsample(:itask-1))+sum(ngroup(itask,:i-1))+1
-              mm2=sum(nsample(:itask-1))+sum(ngroup(itask,:i))
-            end if
-            nf1=0
-            do k=mm1,mm2
-               if(yyy(k)<0.5) then  ! y=1: classified, y=0: unclassified
-                   nf1=nf1+1
-                   feat_tmp1(nf1)=feat(k) 
-               end if
-            end do       
-          do j=i+1,ngroup(itask,1000) 
-               if(itask==1) then
-                 mm3=sum(ngroup(itask,:j-1))+1
-                 mm4=sum(ngroup(itask,:j))
-               else
-                 mm3=sum(nsample(:itask-1))+sum(ngroup(itask,:j-1))+1
-                 mm4=sum(nsample(:itask-1))+sum(ngroup(itask,:j))
-               end if
-               nf2=0
-               do k=mm3,mm4
-                   if(yyy(k)<0.5) then
-                       nf2=nf2+1
-                       feat_tmp2(nf2)=feat(k) 
-                   end if
-               end do
-               if(isconvex(itask,i)==0 .and. isconvex(itask,j)==0) cycle ! both are not convex domains
-
-               if(isconvex(itask,i)==1 .and. isconvex(itask,j)==1) then
-                  !call convex1d_overlap(feat_tmp1(:nf1),feat_tmp2(:nf2),width,k,length_tmp)
-                  call tree_1D(feat_tmp1(:nf1),feat_tmp2(:nf2),k,length_tmp)
-                  overlap_n=overlap_n+k
-                  nconvexpair=nconvexpair+1
-                  if(length_tmp>=0.d0) isoverlap=.true.
-                   ! which feature is shorter
-                   minlen=min(maxval(feat_tmp1(:nf1))-minval(feat_tmp1(:nf1)),maxval(feat_tmp2(:nf2))&
-                          -minval(feat_tmp2(:nf2)))
-                   if(length_tmp<0.d0) then  ! if separated
-                      if(length_tmp>mindist) mindist=length_tmp  ! renew the worst separation
-                   else if(length_tmp>=0.d0 .and. minlen==0.d0) then  ! if overlapped and one feature is 0D
-                      overlap_length=overlap_length+1.d0  ! totally overlapped
-                   else if(length_tmp>=0.d0 .and. minlen>0.d0) then  ! if not separated and no 0D feature
-                      overlap_length=overlap_length+length_tmp/minlen  ! calculate total overlap
-                   end if
-               else if (isconvex(itask,i)==0 .and. isconvex(itask,j)==1) then  !count the number of i-data in j-domain
-                  overlap_n=overlap_n+convex1d_in(feat(mm3:mm4),feat_tmp1(:nf1),width)
-               else if (isconvex(itask,i)==1 .and. isconvex(itask,j)==0) then !count the number of j-data in i-domain
-                  overlap_n=overlap_n+convex1d_in(feat(mm1:mm2),feat_tmp2(:nf2),width)
-               end if
-
-          end do  ! j
-        end do  ! i
+      !call sis_gini_1D(feat, ngroup(itask, :1000), overlap_n)
+      call sis_tree_1D(feat, ngroup(itask, :1000), overlap_n)
+       !write(*,*) "Overlap N", overlap_n
    end do  ! itask
-
+     
    sis_score(1)=float(overlap_n)  ! >=0,larger sis_score,worse feature
    sis_score(1)=1.d0/(sis_score(1)+1.d0)  ! transform to <=1, larger sis_score,better feature
    if(isoverlap) then  ! there are domains overlapped
@@ -1999,6 +1950,10 @@ else if(ptype==2) then
    end if
    sis_score(2) = sis_score(1)
 end if
+if (sis_score(1) .eq. 0.5) then
+   write(*,*) sis_score, overlap_n
+end if
+
 end function
 
 
