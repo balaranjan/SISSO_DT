@@ -7,7 +7,8 @@ score the descriptors instead of overlap for classification problems.
 When compiling, include 'get_dtree.f90'.
 
 To compile with openmpi, please install libopenmpi-dev and then use the following commad to compile.
-mpifort -fallow-argument-mismatch -O2 var_global.f90 libsisso.f90 gen_dtree.f90 DI.f90 FC.f90 SISSO.f90 -o ~/bin/your_code_name
+
+`mpifort -fallow-argument-mismatch -O2 var_global.f90 libsisso.f90 gen_dtree.f90 DI.f90 FC.f90 SISSO.f90 -o ~/bin/your_code_name`
 
 -------------------------------------------------------------------------------------------------------------
 
