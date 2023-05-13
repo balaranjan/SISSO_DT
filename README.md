@@ -1,8 +1,12 @@
+SISSO-DT
+-------------
+
 This repository contains the modified version of SISSO. The modification uses decision tree classifier to 
 score the descriptors instead of overlap for classification problems.
 
 When compiling, include 'get_dtree.f90'.
 
+-------------------------------------------------------------------------------------------------------------
 
 Version SISSO.3.0.2, June, 2020.
 This code is licensed under the Apache License, Version 2.0
