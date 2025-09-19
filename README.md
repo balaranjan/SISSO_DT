@@ -4,20 +4,16 @@ SISSO-DT
 This repository contains the modified version of SISSO. The modification uses decision tree classifier to 
 score the descriptors instead of overlap for classification problems.
 
-When compiling, include 'get_dtree.f90'.
-
-To compile with openmpi, please install libopenmpi-dev and then use the following commad to compile.
-
-`mpifort -fallow-argument-mismatch -O2 var_global.f90 libsisso.f90 types.f90 utils.f90 sorting.f90 gen_dtree.f90 DI.f90 FC.f90 SISSO.f90 -o ~/bin/your_code_name`
-
 -------------------------------------------------------------------------------------------------------------
 
 Version SISSO.3.0.2, June, 2020.
 This code is licensed under the Apache License, Version 2.0
 
 References:
-R. Ouyang, S. Curtarolo, E. Ahmetcik, M. Scheffler, and L. M. Ghiringhelli, Phys. Rev. Mater. 2, 083802 (2018).
-R. Ouyang, E. Ahmetcik, C. Carbogno, M. Scheffler, and L. M. Ghiringhelli, J. Phys.: Mater. 2, 024002 (2019).
+* R. Ouyang, S. Curtarolo, E. Ahmetcik, M. Scheffler, and L. M. Ghiringhelli, Phys. Rev. Mater. 2, 083802 (2018).
+* R. Ouyang, E. Ahmetcik, C. Carbogno, M. Scheffler, and L. M. Ghiringhelli, J. Phys.: Mater. 2, 024002 (2019).
+* B. Selvaratnam, A. O. Oliynyk, and A. Mar, Inorg. Chem. 10865–10875 62(28) (2023).
+
 
 Please use corresponding input templates when switching to a new version.
 See the wiki page for the list of publications with SISSO for materials discovery.
@@ -25,24 +21,18 @@ See the wiki page for the list of publications with SISSO for materials discover
 
 Installation
 -------------
-A MPI Fortran compiler is needed for the compilation. For example, go to the folder "src" and do  
-1).  mpiifort -fp-model precise var_global.f90 libsisso.f90 DI.f90 FC.f90 SISSO.f90 -o ~/bin/your_code_name  
-or  
-2).  mpiifort -O2 var_global.f90 libsisso.f90 DI.f90 FC.f90 SISSO.f90 -o ~/bin/your_code_name  
-  
-Note:
-- option 1) enables better accuracy and run-to-run reproducibility of floating-point calculations; option 2) makes 
-  it faster but tiny run-to-run variations may happen between processors of different types e.g. Intel and AMD. 
-  Thus, option 1) is recommended if accuracy and reproducibility are more focused than speed.
-- if 'mpi' related errors present during the compilation, please open the file 'var_global.f90' and replace
-  the line " use mpi " with " include 'mpif.h' ". However, " use mpi " is strongly encouraged  
-  ( https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node411.htm).
+A MPI Fortran compiler is needed for the compilation. To compile, go to the folder "src" and do  
+`mpifort -fallow-argument-mismatch -O2 var_global.f90 libsisso.f90 types.f90 utils.f90 sorting.f90 gen_dtree.f90 DI.f90 FC.f90 SISSO.f90 -o ~/bin/your_code_name`
 
 Modules in the code:
 - var_global.f90     global variables
 - libsisso.f90       library of subroutines and functions 
 - DI.f90             for model sparsification
 - FC.f90             for feature construction
+- types.f90          for datatypes
+- utils.f90          some utilities
+- sorting.f90        for sorting
+- get_dtree.f90      for decision trees
 - SISSO.f90
 
 
@@ -58,11 +48,5 @@ Output:
 - Folder "desc_dat": the data for the best descriptors/models
 - Folder "residual": residual data generated at each iteration
 - Files "convex2d_hull" (convex3d_hull): the vertices of the 2D (3D) convex hulls for classification
-
-
-About
--------------
-Created and maintained by Runhai Ouyang. Please feel free to open issues in the Github or contact Ouyang  
-(rouyang@shu.edu.cn) in case of any problems/comments/suggestions in using the code. 
 
 
